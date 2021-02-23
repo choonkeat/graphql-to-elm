@@ -238,12 +238,12 @@ const getInputs = (
 ): QueryObjectInput | undefined =>
   node.variableDefinitions && node.variableDefinitions.length > 0
     ? {
-        typeName: `${node.name ? node.name.value : ""}Variables`,
-        kind: "object",
-        fields: node.variableDefinitions.map((node: VariableDefinitionNode) =>
-          nodeToInputField(node, schema)
-        )
-      }
+      typeName: `${node.name ? node.name.value : ""}Variables`,
+      kind: "object",
+      fields: node.variableDefinitions.map((node: VariableDefinitionNode) =>
+        nodeToInputField(node, schema)
+      )
+    }
     : undefined;
 
 const nodeToInputField = (
@@ -256,12 +256,16 @@ const nodeToInputField = (
       type: getInputType(node, schema),
       extensions: null
     },
-    schema
+    schema,
+    0
   );
 
+let mapInputFieldCache: { [id: string]: QueryInputField } = {}
+const maxDepth = 10
 const mapInputField = (
   field: GraphQLInputField,
-  schema: GraphQLSchema
+  schema: GraphQLSchema,
+  depth: number
 ): QueryInputField => {
   const namedType: GraphQLNamedType = getNamedType(field.type);
   const nullableType = getNullableType(field.type);
@@ -269,12 +273,17 @@ const mapInputField = (
 
   let value: QueryInput | undefined = undefined;
 
-  if (namedType instanceof GraphQLInputObjectType) {
+  if (namedType instanceof GraphQLInputObjectType && depth < maxDepth) {
     const fields: GraphQLInputFieldMap = namedType.getFields();
     value = {
       kind: "object",
       typeName,
-      fields: Object.keys(fields).map(key => mapInputField(fields[key], schema))
+      fields: Object.keys(fields).map(key => mapInputFieldCache[String(fields[key].type)] || mapInputField(fields[key], schema, depth + 1))
+    };
+  } else if (depth >= maxDepth) {
+    value = {
+      kind: "scalar",
+      typeName: "jsonb"
     };
   } else if (namedType instanceof GraphQLScalarType) {
     value = {
@@ -288,7 +297,7 @@ const mapInputField = (
     };
   }
 
-  return {
+  return mapInputFieldCache[String(field.type)] = {
     name: field.name,
     value: assertOk(value, `unhandled query input of type ${field.type}`),
     valueWrapper: field.type instanceof GraphQLNonNull ? false : "optional",
@@ -493,8 +502,8 @@ const getOutputs = (
             ? "non-null-optional"
             : false
           : hasDirective
-          ? "optional"
-          : "nullable",
+            ? "optional"
+            : "nullable",
       valueListItemWrapper:
         nullableType instanceof GraphQLList
           ? nullableType.ofType instanceof GraphQLNonNull
@@ -553,9 +562,8 @@ const getOutputs = (
           nodeInfo.fragments,
           schema
         );
-        rootOutput.typeName = `${
-          node.name ? node.name.value : ""
-        }${firstToUpperCase(rootOutput.typeName)}`;
+        rootOutput.typeName = `${node.name ? node.name.value : ""
+          }${firstToUpperCase(rootOutput.typeName)}`;
       },
       Field(node: FieldNode) {
         const nodeInfo: NodeInfo = popNodeInfo();
