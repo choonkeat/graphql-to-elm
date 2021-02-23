@@ -278,7 +278,13 @@ const mapInputField = (
     value = {
       kind: "object",
       typeName,
-      fields: Object.keys(fields).map(key => mapInputFieldCache[String(fields[key].type)] || mapInputField(fields[key], schema, depth + 1))
+      fields: Object.keys(fields).map(key => {
+        let found = mapInputFieldCache[String(fields[key].type)]
+        if (found) {
+          return { ...found, name: fields[key].name }
+        }
+        return mapInputField(fields[key], schema, depth + 1)
+      })
     };
   } else if (depth >= maxDepth) {
     value = {
