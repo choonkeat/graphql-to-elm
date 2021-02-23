@@ -238,12 +238,12 @@ const getInputs = (
 ): QueryObjectInput | undefined =>
   node.variableDefinitions && node.variableDefinitions.length > 0
     ? {
-      typeName: `${node.name ? node.name.value : ""}Variables`,
-      kind: "object",
-      fields: node.variableDefinitions.map((node: VariableDefinitionNode) =>
-        nodeToInputField(node, schema)
-      )
-    }
+        typeName: `${node.name ? node.name.value : ""}Variables`,
+        kind: "object",
+        fields: node.variableDefinitions.map((node: VariableDefinitionNode) =>
+          nodeToInputField(node, schema)
+        )
+      }
     : undefined;
 
 const nodeToInputField = (
@@ -260,8 +260,8 @@ const nodeToInputField = (
     0
   );
 
-let mapInputFieldCache: { [id: string]: QueryInputField } = {}
-const maxDepth = 10
+let mapInputFieldCache: { [id: string]: QueryInputField } = {};
+const maxDepth = 10;
 const mapInputField = (
   field: GraphQLInputField,
   schema: GraphQLSchema,
@@ -279,11 +279,11 @@ const mapInputField = (
       kind: "object",
       typeName,
       fields: Object.keys(fields).map(key => {
-        let found = mapInputFieldCache[String(fields[key].type)]
+        let found = mapInputFieldCache[String(fields[key].type)];
         if (found) {
-          return { ...found, name: fields[key].name }
+          return { ...found, name: fields[key].name };
         }
-        return mapInputField(fields[key], schema, depth + 1)
+        return mapInputField(fields[key], schema, depth + 1);
       })
     };
   } else if (depth >= maxDepth) {
@@ -303,7 +303,7 @@ const mapInputField = (
     };
   }
 
-  return mapInputFieldCache[String(field.type)] = {
+  return (mapInputFieldCache[String(field.type)] = {
     name: field.name,
     value: assertOk(value, `unhandled query input of type ${field.type}`),
     valueWrapper: field.type instanceof GraphQLNonNull ? false : "optional",
@@ -313,7 +313,7 @@ const mapInputField = (
           ? "non-null"
           : "optional"
         : false
-  };
+  });
 };
 
 const getInputType = (
@@ -508,8 +508,8 @@ const getOutputs = (
             ? "non-null-optional"
             : false
           : hasDirective
-            ? "optional"
-            : "nullable",
+          ? "optional"
+          : "nullable",
       valueListItemWrapper:
         nullableType instanceof GraphQLList
           ? nullableType.ofType instanceof GraphQLNonNull
@@ -568,8 +568,9 @@ const getOutputs = (
           nodeInfo.fragments,
           schema
         );
-        rootOutput.typeName = `${node.name ? node.name.value : ""
-          }${firstToUpperCase(rootOutput.typeName)}`;
+        rootOutput.typeName = `${
+          node.name ? node.name.value : ""
+        }${firstToUpperCase(rootOutput.typeName)}`;
       },
       Field(node: FieldNode) {
         const nodeInfo: NodeInfo = popNodeInfo();
